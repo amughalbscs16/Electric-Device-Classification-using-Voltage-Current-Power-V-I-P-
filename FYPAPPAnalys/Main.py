@@ -1,25 +1,35 @@
-import tensorflow as tf
-import numpy as np
-import os
-from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.naive_bayes import GaussianNB
-from sklearn.ensemble import RandomForestClassifier, VotingClassifier
-from bidict import bidict
-from sklearn.neighbors import RadiusNeighborsClassifier
-import time
+from imports import *
 
-main_dir = 'high_freq_difference_data'
-label = readLabels()
-array = getArray()
-newarray = getnewArray()
-train, test, xtrain, ytrain, xhftrain, xhftest, xlftrain, xlftest, ytrain, ytest = splitTrainTest(newarray)
-highFreqTrain()
-time.sleep(30)
-lowFreqTrain()
+#Through Voting top max (top 5 LF, top 5 HF)
+def classifyFinal(train ,clfhf, clflf, devicename, xhftest, xlftest, ytest, label):
+	#Get ID of Device
+	idOfDevice = label[devicename]
+	#Extract a test example of that id
+	lfTestItem = None
+	hfTestItem = None
+	for i in range(0,len(ytest)):
+		if ytest[i] == idOfDevice:
+			lfTestItem = xlftest[i]
+			hfTestItem = xhftest[i]
+			break;
 
-def readLabels():
+	#Now Classify
+	nsamples, nxhf, nyhf = xhftrain.shape
+	distancesHf, indicesHf = clfhf.kneighbors(xhftest[i].reshape((1,nxhf*nyhf)), n_neighbors=8)
+	hfFinalIndices = [int(train[x][-1]) for x in indicesHf[0]]
+	#LF Top 5 Indices
+	nsamples, nxlf, nylf = xlftrain.shape
+	distancesHf, indicesLf = clflf.kneighbors(xlftest[i].reshape((1,nxlf*nylf)), n_neighbors=7)
+	lfFinalIndices = [int(train[x][-1]) for x in indicesLf[0]]
+	finalIndices = hfFinalIndices + lfFinalIndices
+	counter = dict(Counter(finalIndices))
+	print(counter)
+	maxIndice = max(counter.items(), key=operator.itemgetter(1))[0]    
+	print("The Classified Device is: ", label.inverse[maxIndice])
+	return label.inverse[maxIndice]
+	
+
+def readLabels(main_dir):
 	label = {}
 	for i in range(len(os.listdir(main_dir))):
 	    if (os.listdir(main_dir)[i].split('.')[0] not in ['mains']):
@@ -28,8 +38,6 @@ def readLabels():
 	return label
 
 
-
-print(label)
 def getArray():
 	array = []
 	for file in os.listdir(main_dir):
@@ -65,14 +73,15 @@ def getArray():
 #-----
 
 #-----
-def getnewArray():
+def getnewArray(array):
 	newarray = np.zeros((len(array)-1, len(array[0])))
 	for x in range(len(array)-1):
-	    print(x)
+	    #print(x)
 	    for y in range(len(array[0])):
-	        if (y%100 == 0):
-	            print(y) 
-	        newarray[x][y] = float(array[x][y])
+	        try:
+	        	newarray[x][y] = float(array[x][y])
+	        except IndexError as E:
+	        	print(x,y)
 	return newarray
 
 #-----
@@ -96,24 +105,23 @@ def splitTrainTest(newarray):
 	xtest,ytest = test[:,0:upto,:],test[:,upto,:]
 	xhftest = xtest[:,0:550,:]
 	xlftest = xtest[:,550:800,:]
-	print(ytrain)
-	print(ytest)
+	#print(ytrain)
+	#print(ytest)
 	return train,test, xtrain, ytrain, xhftrain, xhftest, xlftrain, xlftest, ytrain, ytest
 
 #-----
-train, test, xtrain, ytrain, xhftrain, xhftest, xlftrain, xlftest, ytrain, ytest = splitTrainTest(newarray)
 #-----
 
 def highFreqTrain():
 	#HF using top n_neighbors to see if the ground label is in n_neighbors or not.
 	nsamples, nx, ny = xhftrain.shape
 	xtrain_new = xhftrain.reshape((nsamples,nx*ny))
-	clf = KNeighborsClassifier(n_neighbors=1, p=1)
-	clf.fit(xtrain_new, ytrain.ravel())
-	print(ytrain.ravel())
-	results = []
+	clfhf = KNeighborsClassifier(n_neighbors=1, p=1)
+	clfhf.fit(xtrain_new, ytrain.ravel())
+	#print(ytrain.ravel())
+	"""results = []
 	for i in range(0,len(xhftest)):
-	    distances, indices = clf.kneighbors(xhftest[i].reshape((1,nx*ny)), n_neighbors=1)
+	    distances, indices = clfhf.kneighbors(xhftest[i].reshape((1,nx*ny)), n_neighbors=1)
 	    #for x in indices[0]:
 	    #print(ytest[i], [int(train[x][-1]) for x in indices[0]])
 	    if (ytest[i] in [int(train[x][-1]) for x in indices[0]]):
@@ -125,7 +133,8 @@ def highFreqTrain():
 	print("Results for All Categories, power:"+str(1)+" neighbors: "+str(1))
 	print(sum(results))
 	print(len(ytest))
-	print(sum(results)/len(ytest))
+	print(sum(results)/len(ytest))"""
+	return clfhf
 #-------
 
 #-------
@@ -138,7 +147,7 @@ def lowFreqTrain():
 	xtrain_new = xlftrain.reshape((nsamples,nx*ny))
 	clflf = KNeighborsClassifier(n_neighbors=1, p=1)
 	clflf.fit(xtrain_new, ytrain.ravel())
-	print(ytrain.ravel())
+	"""print(ytrain.ravel())
 	results = []
 	for i in range(0,len(xlftest)):
 	    distances, indices = clflf.kneighbors(xlftest[i].reshape((1,nx*ny)), n_neighbors=1)
@@ -153,7 +162,38 @@ def lowFreqTrain():
 	print("Results for All Categories, power:"+str(1)+" neighbors: "+str(1))
 	print(sum(results))
 	print(len(ytest))
-	print(sum(results)/len(ytest))
+	print(sum(results)/len(ytest))"""
+	return clflf
 #-------------
 
 #------------
+
+def addLabelstoDatabase(label):
+	table_name = 'devices'
+	mydb = mysql.connector.connect(
+	  host="localhost",
+	  user="root",
+	  passwd="",
+	  database="fypapp"
+	)
+
+	mycursor = mydb.cursor()
+	sql = "Insert into "+table_name+"(id, name, status, latest_change) values (%s, %s, %s, %s)"
+	for key,value in label.items():
+		val = (str(value), key, '0', '-10')
+		mycursor.execute(sql, val)
+	mydb.commit()
+	print(mycursor.rowcount, "record inserted.")
+
+main_dir = 'high_freq_difference_data'
+label = readLabels(main_dir)
+addLabelstoDatabase(label)
+print(label)
+array1 = getArray()
+newarray = getnewArray(array1)
+train, test, xtrain, ytrain, xhftrain, xhftest, xlftrain, xlftest, ytrain, ytest = splitTrainTest(newarray)
+hfClassifer = highFreqTrain()
+lfClassifier = lowFreqTrain()
+
+#for key,value in label.items():
+#	print(key,classifyFinal(train ,hfClassifer, lfClassifier, key, xhftest, xlftest, ytest, label))
