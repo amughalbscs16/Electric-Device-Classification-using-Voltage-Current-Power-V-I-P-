@@ -14,10 +14,10 @@ class CreateDevicesTable extends Migration
     public function up()
     {
         Schema::create('devices', function (Blueprint $table) {
-            $table->id();
+            $table->integer('id');
             $table->string('name');
-            $table->boolean('status');
-            $table->integer('latest_change');
+            $table->integer('status');
+            $table->boolean('latest_change');
             $table->timestamps();
         });
     }

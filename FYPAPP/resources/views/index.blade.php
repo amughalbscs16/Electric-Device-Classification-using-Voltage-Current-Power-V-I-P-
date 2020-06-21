@@ -1,85 +1,102 @@
 
+@extends('layouts.fyp')
+@section('javascript')
+<script>
+$( document ).ready(function() {
+	function checkbox(){
+	$(':checkbox').change(function() {
+    if (this.checked == true)
+    {
+      console.log("http://localhost:5000/userSelection/"+this.id);
+      $.get("http://localhost:5000/userSelection/"+this.id, function(data){
+        console.log(data);
+      });
+      $('#modal').modal('hide');
+    }
+	}); 
+	}
+	var url = "http://localhost:8000"+"/checkTransition";
+	var url2 = "http://localhost:8000"+"/clearTransition";
+	console.log( url );
+	function openModal(deviceName)
+	{
+		//For loop to display each device and a checkbox when checked, update it in the database.
+		if (deviceName.length == 1){
+			$('.modal-body').html(deviceName[0].toUpperCase()+" Transition.");
+			$('#openmodal').click();
+		}
+		else{
+			body = "<table width=\"90%\">";
 
+			$( deviceName ).each(function( index ) {
+			  body += "<tr><td>" + deviceName[index].toUpperCase() + "</td> <td><label class=\"switch\"> <input type=\"checkbox\" id="+deviceName[index]+
+			  "><span class=\"slider round\"></span></label></td></tr>";
+			});
+			body += "</table>";
+			$('.modal-body').html(body);
+			$('#openmodal').click();
+			checkbox();
+		}
+	}
+	function clearUpdate(url)
+	{
+		$.get( url , function(data){
+	    	console.log("Notification Cleared from Database");
+      	});
+	}
 
-<html lang="en">
-  <head>
-  	<title>Sidebar 02</title>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+	function getUpdate(url)
+	{	setTimeout(function() {
 
-    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800,900" rel="stylesheet">
-		
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-		<link rel="stylesheet" href="{{ asset('css/style.css') }}">
-  </head>  <body>
-		
-		<div class="wrapper d-flex align-items-stretch">
-			<nav id="sidebar">
-				<div class="custom-menu">
-					<button type="button" id="sidebarCollapse" class="btn btn-primary">
-	          <i class="fa fa-bars"></i>
-	          <span class="sr-only">Toggle Menu</span>
-	        </button>
+	    $.get( url , function(data){
+	        if (data != '0')
+	        {
+	        	//alert(data);
+	        	openModal(data);
+	        	clearUpdate(url2);
+	        }
+	        getUpdate(url);
+      	});
+      	  //your code to be executed after 3 second
+		}, 3000);
+	}
+	getUpdate(url);
+});
+</script>
+@endsection
+@section('header')
+Event Updates
+@endsection
+@section('content')
+    @if (session('status'))
+        <div class="alert alert-success" role="alert">
+            {{ session('status') }}
         </div>
-				<div class="p-4 pt-5">
-		  		<h1><a href="index.html" class="logo">Splash</a></h1>
-	        <ul class="list-unstyled components mb-5">
-	          <li class="active">
-	            <a href="#homeSubmenu" data-toggle="collapse" aria-expanded="false">Home</a>
-	          </li>
-	          <li>
-	              <a href="#">About</a>
-	          </li>
-	          <li>
-              <a href="#pageSubmenu" data-toggle="collapse" aria-expanded="false">Stats</a>
-              <ul class="collapse list-unstyled" id="pageSubmenu">
+    @endif
+    </div>
+    This page provides, notifications of devices.
+    <button id="openmodal" type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal" style="visibility:hidden;">Open Modal</button>
 
-              </ul>
-	          </li>
-	          <li>
-              <a href="#">Manage Devices</a>
-	          </li>
-	        </ul>
+	<!-- Modal -->
+	<div id="myModal" class="modal fade" role="dialog">
+	  <div class="modal-dialog">
 
-	        <div class="mb-5">
-						<h3 class="h6">Subscribe for newsletter</h3>
-						<form action="#" class="colorlib-subscribe-form">
-	            <div class="form-group d-flex">
-	            	<div class="icon"><span class="icon-paper-plane"></span></div>
-	              <input type="text" class="form-control" placeholder="Enter Email Address">
-	            </div>
-	          </form>
-					</div>
-
-	        <div class="footer">
-	        	<p><!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-						  Copyright &copy;<script>document.write(new Date().getFullYear());</script> All rights reserved | This template is made with <i class="icon-heart" aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank">Colorlib.com</a>
-						  <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. --></p>
-	        </div>
+	    <!-- Modal content-->
+	    <div class="modal-content">
+	      <div class="modal-header">
+	        
+	        <h4 class="modal-title" align="center">Device Transition</h4>
+	        <button type="button" class="close" data-dismiss="modal">&times;</button>
+	      </div>
+	      <div class="modal-body">
 
 	      </div>
-    	</nav>
+	      <div class="modal-footer">
+	        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+	      </div>
+	    </div>
 
-        <!-- Page Content  -->
-      <div id="content" class="p-4 p-md-5 pt-5">
+	  </div>
+</div>
+@endsection
 
-        <h2 class="mb-4">Main Page</h2>
-        <div class="card-body">
-                    @if (session('status'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('status') }}
-                        </div>
-                    @endif
-
-                    You are logged in!
-                </div>
-      </div>
-		</div>
-
-
-    <script src="js/jquery.min.js"></script>
-    <script src="js/popper.js"></script>
-    <script src="js/bootstrap.min.js"></script>
-    <script src="js/main.js"></script>
-  </body>
-</html>

@@ -8,6 +8,6 @@ class DevicesHistory extends Model
 {
     protected $table = "devices_history";
     protected $fillable = [
-        'status',
+        'name','status', 'created_at', 'detected_devices'
     ];
 }

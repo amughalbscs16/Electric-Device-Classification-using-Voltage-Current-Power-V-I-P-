@@ -14,8 +14,9 @@ class CreateDevicesHistoryTable extends Migration
     public function up()
     {
         Schema::create('devices_history', function (Blueprint $table) {
-            $table->id();
+            $table->string('name');
             $table->boolean('status');
+            $table->string('detected_devices');
             $table->timestamps();
         });
     }

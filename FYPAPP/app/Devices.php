@@ -8,6 +8,6 @@ class Devices extends Model
 {
 	protected $table = "devices";
     protected $fillable = [
-        'name', 'status', 'latest_change',
+        'name', 'status', 'latest_change'
     ];
 }
